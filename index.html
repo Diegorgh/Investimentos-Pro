@@ -3,137 +3,162 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investidor Pro - Dashboard</title>
+    <title>Investidor Pro - Gestão</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; padding: 15px; }
-        .container { max-width: 500px; margin: auto; }
-        .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
-        .balance-label { font-size: 0.85rem; color: #888; text-transform: uppercase; }
-        .balance-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); margin: 5px 0; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
         
-        .chart-container { position: relative; height: 250px; width: 100%; margin-top: 10px; }
-        
-        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
-        .btn-deposit { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-deposit:hover { background: #00b89c; }
+        /* Menu de Abas */
+        .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
-        /* Estilo do Modal */
-        #pixModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; z-index: 10; }
-        .modal-content { background: white; color: black; padding: 25px; border-radius: 20px; text-align: center; width: 85%; max-width: 320px; }
+        .container { padding: 20px; max-width: 500px; margin: auto; }
+        .content { display: none; }
+        .content.active { display: block; }
+
+        .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        .balance-value { font-size: 2rem; font-weight: bold; color: var(--primary); }
+        .label-small { font-size: 0.8rem; color: #888; text-transform: uppercase; }
+
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
+        .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        
+        .chart-container { height: 250px; width: 100%; margin: 15px 0; }
     </style>
 </head>
 <body>
 
-<div class="container">
-    <div class="card">
-        <div class="balance-label">Património Estimado (12 meses)</div>
-        <div class="balance-value" id="total-final">R$ 0,00</div>
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="openTab('simulador', this)">SIMULADOR</button>
+        <button class="tab-btn" onclick="openTab('aportes', this)">MEUS APORTES</button>
+    </div>
+
+    <div class="container">
         
-        <div class="chart-container">
-            <canvas id="meuGrafico"></canvas>
+        <div id="simulador" class="content active">
+            <div class="card">
+                <span class="label-small">Projeção Total</span>
+                <div class="balance-value" id="total-final">R$ 0,00</div>
+                
+                <div style="display: flex; gap: 20px; margin-top: 10px;">
+                    <div>
+                        <span class="label-small">Só Juros</span>
+                        <div id="so-juros" style="color: #00d1b2; font-weight: bold;">R$ 0,00</div>
+                    </div>
+                    <div>
+                        <span class="label-small">Seu Capital</span>
+                        <div id="so-capital" style="color: #fff;">R$ 0,00</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="meuGrafico"></canvas>
+                </div>
+            </div>
+
+            <div class="card">
+                <h3>Ajustar Simulação</h3>
+                <label class="label-small">Investimento Inicial</label>
+                <input type="number" id="capital-input" value="1000">
+                <label class="label-small">Taxa Mensal (%)</label>
+                <input type="number" id="taxa-input" value="1.5">
+                <button class="btn" onclick="atualizarSimulacao()">Recalcular</button>
+            </div>
         </div>
+
+        <div id="aportes" class="content">
+            <div class="card">
+                <h3>Realizar Novo Aporte</h3>
+                <p class="label-small">Envie capital para a sua conta de investimento via PIX.</p>
+                <input type="number" id="valor-aporte" placeholder="Valor do Aporte (R$)">
+                <button class="btn" onclick="mostrarPix()">Gerar Código PIX</button>
+            </div>
+
+            <div id="area-pix" class="card" style="display: none; text-align: center; border: 2px dashed var(--primary);">
+                <h3>Pagamento PIX</h3>
+                <div style="background: #fff; color: #000; padding: 10px; font-family: monospace; border-radius: 5px; margin: 10px 0;" id="chave">SUA-CHAVE-AQUI</div>
+                <button class="btn" style="background: #fff;" onclick="copiarPix()">Copiar Código</button>
+            </div>
+        </div>
+
     </div>
 
-    <div class="card">
-        <h3>Simular Novo Aporte</h3>
-        <label class="balance-label">Valor Inicial / Aporte</label>
-        <input type="number" id="valor-input" placeholder="Ex: 1000">
-        
-        <label class="balance-label">Taxa de Rendimento (% ao mês)</label>
-        <input type="number" id="taxa-input" value="1.5">
-        
-        <button class="btn-deposit" onclick="atualizarSimulacao()">Atualizar Gráfico</button>
-        <button class="btn-deposit" style="margin-top: 10px; background: #fff;" onclick="abrirPix()">Depositar Agora</button>
-    </div>
-</div>
+    <script>
+        let meuGrafico;
 
-<div id="pixModal">
-    <div class="modal-content">
-        <h3>Pagamento Via PIX</h3>
-        <p style="font-size: 0.9rem;">Envie o valor e o comprovante para processarmos o seu aporte.</p>
-        <div style="background: #f0f0f0; padding: 10px; font-family: monospace; border-radius: 5px; margin: 15px 0;" id="chave">sua-chave-aqui-123</div>
-        <button onclick="copiarPix()" style="width: 100%; padding: 10px; border-radius: 5px; border: 1px solid #ccc; cursor: pointer;">Copiar Código</button>
-        <p onclick="fecharPix()" style="color: red; margin-top: 15px; cursor: pointer; font-size: 0.8rem;">CANCELAR</p>
-    </div>
-</div>
-
-<script>
-    let meuGrafico;
-
-    function atualizarSimulacao() {
-        const capital = parseFloat(document.getElementById('valor-input').value) || 0;
-        const taxa = parseFloat(document.getElementById('taxa-input').value) / 100;
-        const meses = 12;
-        
-        let dadosTotal = [];
-        let labels = [];
-        let capitalInvestido = [];
-
-        for (let t = 0; t <= meses; t++) {
-            // M = C * (1 + i)^t
-            let montante = capital * Math.pow((1 + taxa), t);
-            dadosTotal.push(montante.toFixed(2));
-            capitalInvestido.push(capital.toFixed(2));
-            labels.push("Mês " + t);
+        // Lógica das Abas
+        function openTab(tabName, btn) {
+            let i, content, tabBtns;
+            content = document.getElementsByClassName("content");
+            for (i = 0; i < content.length; i++) { content[i].classList.remove("active"); }
+            
+            tabBtns = document.getElementsByClassName("tab-btn");
+            for (i = 0; i < tabBtns.length; i++) { tabBtns[i].classList.remove("active"); }
+            
+            document.getElementById(tabName).classList.add("active");
+            btn.classList.add("active");
         }
 
-        document.getElementById('total-final').innerText = "R$ " + parseFloat(dadosTotal[meses]).toLocaleString('pt-BR');
+        function atualizarSimulacao() {
+            const C = parseFloat(document.getElementById('capital-input').value) || 0;
+            const i = parseFloat(document.getElementById('taxa-input').value) / 100;
+            const t = 12;
 
-        renderizarGrafico(labels, dadosTotal, capitalInvestido);
-    }
+            let dadosTotal = [];
+            let labels = [];
+            let capitais = [];
 
-    function renderizarGrafico(labels, dados, capital) {
-        const ctx = document.getElementById('meuGrafico').getContext('2d');
-        
-        if (meuGrafico) { meuGrafico.destroy(); } // Remove o gráfico antigo antes de criar um novo
-
-        meuGrafico = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: labels,
-                datasets: [{
-                    label: 'Crescimento Total',
-                    data: dados,
-                    borderColor: '#00d1b2',
-                    backgroundColor: 'rgba(0, 209, 178, 0.2)',
-                    fill: true,
-                    tension: 0.4
-                }, {
-                    label: 'Capital Investido',
-                    data: capital,
-                    borderColor: '#ffffff',
-                    borderDash: [5, 5],
-                    fill: false
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: {
-                    y: { ticks: { color: '#888' }, grid: { color: '#333' } },
-                    x: { ticks: { color: '#888' }, grid: { display: false } }
-                }
+            for (let mes = 0; mes <= t; mes++) {
+                let M = C * Math.pow((1 + i), mes);
+                dadosTotal.push(M.toFixed(2));
+                capitais.push(C.toFixed(2));
+                labels.push("Mês " + mes);
             }
-        });
-    }
 
-    // Funções do PIX
-    function abrirPix() { document.getElementById('pixModal').style.display = 'flex'; }
-    function fecharPix() { document.getElementById('pixModal').style.display = 'none'; }
-    function copiarPix() {
-        navigator.clipboard.writeText(document.getElementById('chave').innerText);
-        alert("Chave copiada!");
-    }
+            const totalFinal = parseFloat(dadosTotal[t]);
+            const jurosGanhos = totalFinal - C;
 
-    // Iniciar com uma simulação padrão
-    window.onload = () => {
-        document.getElementById('valor-input').value = 5000;
-        atualizarSimulacao();
-    };
-</script>
+            document.getElementById('total-final').innerText = totalFinal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('so-juros').innerText = jurosGanhos.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('so-capital').innerText = C.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+            renderizarGrafico(labels, dadosTotal, capitais);
+        }
+
+        function renderizarGrafico(labels, dados, capitais) {
+            const ctx = document.getElementById('meuGrafico').getContext('2d');
+            if (meuGrafico) { meuGrafico.destroy(); }
+            meuGrafico = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Total Acumulado',
+                        data: dados,
+                        borderColor: '#00d1b2',
+                        backgroundColor: 'rgba(0, 209, 178, 0.1)',
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function mostrarPix() {
+            const val = document.getElementById('valor-aporte').value;
+            if(!val) return alert("Digite um valor");
+            document.getElementById('area-pix').style.display = 'block';
+        }
+
+        function copiarPix() {
+            navigator.clipboard.writeText(document.getElementById('chave').innerText);
+            alert("PIX Copiado! Envie o comprovante após o pagamento.");
+        }
+
+        window.onload = atualizarSimulacao;
+    </script>
 </body>
 </html>
