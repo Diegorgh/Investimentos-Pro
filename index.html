@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investidor Pro - Realtime</title>
+    <title>Investidor Pro - Gestão & Evolução</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -13,15 +13,19 @@
         :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; --red: #ff3860; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
         #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+        .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 15px 10px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.65rem; white-space: nowrap; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
         .container { padding: 20px; max-width: 550px; margin: auto; padding-bottom: 100px; }
         .content { display: none; }
         .content.active { display: block; }
         .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
         .balance-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); }
-        .log-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; font-size: 0.85rem; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+        th { text-align: left; color: var(--primary); padding: 8px; border-bottom: 1px solid #333; }
+        td { padding: 8px; border-bottom: 1px solid #222; }
+
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
         .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
         .btn-whatsapp { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 18px; border-radius: 50px; text-decoration: none; font-weight: bold; z-index: 1000; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
@@ -31,49 +35,64 @@
 
     <div id="login-screen">
         <div class="card" style="width: 80%; max-width: 320px; text-align: center;">
-            <h2 style="color: var(--primary)">Bem-vindo</h2>
+            <h2 style="color: var(--primary)">Portal Investidor</h2>
             <input type="password" id="pass-input" placeholder="Senha de Acesso">
-            <button class="btn" onclick="fazerLogin()">Aceder Painel</button>
+            <button class="btn" onclick="fazerLogin()">Aceder ao Painel</button>
         </div>
     </div>
 
     <div class="tab-menu">
         <button class="tab-btn active" onclick="openTab('resumo', this)">RESUMO</button>
+        <button class="tab-btn" onclick="openTab('evolucao', this)">MINHA EVOLUÇÃO</button>
         <button class="tab-btn" onclick="openTab('extrato', this)">EXTRATO REAL</button>
         <button class="tab-btn" onclick="openTab('admin', this)" id="btn-tab-admin" style="display:none; color: #f1c40f;">ADMIN 🛠️</button>
     </div>
 
-    <a href="https://wa.me/5581989006674" class="btn-whatsapp" target="_blank">💬 Suporte WhatsApp</a>
+    <a href="https://wa.me/5581989006674" class="btn-whatsapp" target="_blank">💬 WhatsApp</a>
 
     <div class="container">
         <div id="resumo" class="content active">
             <div class="card">
-                <span style="font-size: 0.8rem; color: #888;">SALDO ATUAL INVESTIDO</span>
+                <span style="font-size: 0.8rem; color: #888;">SALDO TOTAL ATUAL</span>
                 <div class="balance-value" id="saldo-total">R$ 0,00</div>
             </div>
             <div class="card">
-                <h3>Projeção de Crescimento</h3>
-                <canvas id="graficoReal" height="200"></canvas>
+                <h3>Histórico de Rendimento</h3>
+                <canvas id="graficoReal" height="180"></canvas>
+            </div>
+        </div>
+
+        <div id="evolucao" class="content">
+            <div class="card">
+                <h3>Projeção de Juros</h3>
+                <p style="font-size: 0.75rem; color: #888;">Simulação baseada no seu saldo real atual (Taxa: 1.5% a.m)</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th>Capital</th>
+                            <th>Juros</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-evolucao"></tbody>
+                </table>
             </div>
         </div>
 
         <div id="extrato" class="content">
             <div class="card">
-                <h3>Movimentações de Conta</h3>
-                <div id="lista-logs">Conectando ao servidor...</div>
+                <h3>Movimentações</h3>
+                <div id="lista-logs">Conectando...</div>
             </div>
         </div>
 
         <div id="admin" class="content">
             <div class="card">
-                <h3>Gerir Capital do Cliente</h3>
-                <label style="font-size: 0.7rem; color: #888;">VALOR DA OPERAÇÃO</label>
-                <input type="number" id="adm-valor" placeholder="Ex: 500.00">
-                <button class="btn" onclick="registrarOp('deposito')">Confirmar Aporte</button>
+                <h3>Painel Administrativo</h3>
+                <input type="number" id="adm-valor" placeholder="Valor R$">
+                <button class="btn" onclick="registrarOp('deposito')">Adicionar Aporte</button>
                 <button class="btn" style="background: var(--red)" onclick="registrarOp('saque')">Registrar Retirada</button>
-            </div>
-            <div class="card">
-                <p style="font-size: 0.8rem; color: #888;">Nota: Use o 'Saque' se o cliente retirar apenas o rendimento mensal.</p>
             </div>
         </div>
     </div>
@@ -88,6 +107,7 @@
         
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+        let saldoGlobal = 0;
 
         function fazerLogin() {
             const pass = document.getElementById('pass-input').value;
@@ -110,7 +130,7 @@
                 timestamp: Date.now()
             }).then(() => { 
                 document.getElementById('adm-valor').value = "";
-                alert("Operação registada!"); 
+                alert("Sucesso!"); 
             });
         }
 
@@ -118,7 +138,7 @@
             db.ref('movimentacoes').on('value', (snapshot) => {
                 const dados = snapshot.val();
                 let saldo = 0;
-                let html = "";
+                let htmlLogs = "";
                 
                 if (dados) {
                     const lista = Object.values(dados).sort((a,b) => b.timestamp - a.timestamp);
@@ -126,17 +146,38 @@
                         if(item.tipo === 'deposito') saldo += item.valor;
                         else saldo -= item.valor;
 
-                        html += `
-                            <div class="log-item">
+                        htmlLogs += `
+                            <div class="log-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333; font-size:0.8rem">
                                 <span>${item.data}</span>
                                 <span style="color:${item.tipo === 'deposito' ? '#00d1b2':'#ff3860'}">${item.tipo.toUpperCase()}</span>
-                                <span>R$ ${item.valor.toLocaleString('pt-BR')}</span>
+                                <span>R$ ${item.valor.toFixed(2)}</span>
                             </div>`;
                     });
                 }
+                saldoGlobal = saldo;
                 document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-                document.getElementById('lista-logs').innerHTML = html || "Sem movimentações.";
+                document.getElementById('lista-logs').innerHTML = htmlLogs || "Sem registros.";
+                gerarPlanilhaEvolucao(saldo);
             });
+        }
+
+        function gerarPlanilhaEvolucao(capitalAtual) {
+            const taxa = 0.015; // 1.5%
+            let htmlEvolucao = "";
+            let saldoProjetado = capitalAtual;
+
+            for (let i = 1; i <= 12; i++) {
+                let jurosMes = saldoProjetado * taxa;
+                saldoProjetado += jurosMes;
+                htmlEvolucao += `
+                    <tr>
+                        <td>${i}º Mês</td>
+                        <td>R$ ${capitalAtual.toFixed(2)}</td>
+                        <td style="color:#00d1b2">+ R$ ${jurosMes.toFixed(2)}</td>
+                        <td>R$ ${saldoProjetado.toFixed(2)}</td>
+                    </tr>`;
+            }
+            document.getElementById('tabela-evolucao').innerHTML = htmlEvolucao;
         }
 
         function openTab(tabName, btn) {
