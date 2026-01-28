@@ -3,114 +3,141 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investidor Pro - Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <title>Investidor Pro - Realtime</title>
     
-    <style>
-        :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; --whatsapp: #25d366; }
-        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
-        
-        .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
-        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
+    <style>
+        :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; --red: #ff3860; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
+        #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+        .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
         .container { padding: 20px; max-width: 550px; margin: auto; padding-bottom: 100px; }
         .content { display: none; }
         .content.active { display: block; }
-
         .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
-        .balance-value { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
-        .label-small { font-size: 0.75rem; color: #888; text-transform: uppercase; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; color: #fff; }
-        th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #333; }
-        td { padding: 10px; border-bottom: 1px solid #222; }
-
+        .balance-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); }
+        .log-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #333; font-size: 0.85rem; }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
         .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        .btn-pdf { background: #e74c3c; color: white; margin-bottom: 15px; }
-        
-        /* Botão WhatsApp Flutuante */
-        .btn-whatsapp { 
-            position: fixed; bottom: 20px; right: 20px; 
-            background-color: var(--whatsapp); color: white; 
-            padding: 12px 18px; border-radius: 50px; 
-            text-decoration: none; font-weight: bold; font-size: 0.85rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.4); z-index: 1000;
-            display: flex; align-items: center; gap: 8px;
-        }
-
-        .chart-container { height: 200px; width: 100%; margin: 15px 0; }
+        .btn-whatsapp { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 18px; border-radius: 50px; text-decoration: none; font-weight: bold; z-index: 1000; display: flex; align-items: center; gap: 8px; font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
-    <div class="tab-menu">
-        <button class="tab-btn active" onclick="openTab('simulador', this)">SIMULADOR</button>
-        <button class="tab-btn" onclick="openTab('extrato', this)">EXTRATO MENSAL</button>
-        <button class="tab-btn" onclick="openTab('aportes', this)">APORTES</button>
+    <div id="login-screen">
+        <div class="card" style="width: 80%; max-width: 320px; text-align: center;">
+            <h2 style="color: var(--primary)">Bem-vindo</h2>
+            <input type="password" id="pass-input" placeholder="Senha de Acesso">
+            <button class="btn" onclick="fazerLogin()">Aceder Painel</button>
+        </div>
     </div>
 
-    <a href="https://wa.me/5581989006674?text=Olá! Acabei de fazer uma simulação no app e gostaria de saber mais sobre como investir." class="btn-whatsapp" target="_blank">
-        💬 Falar com Consultor
-    </a>
+    <div class="tab-menu">
+        <button class="tab-btn active" onclick="openTab('resumo', this)">RESUMO</button>
+        <button class="tab-btn" onclick="openTab('extrato', this)">EXTRATO REAL</button>
+        <button class="tab-btn" onclick="openTab('admin', this)" id="btn-tab-admin" style="display:none; color: #f1c40f;">ADMIN 🛠️</button>
+    </div>
+
+    <a href="https://wa.me/5581989006674" class="btn-whatsapp" target="_blank">💬 Suporte WhatsApp</a>
 
     <div class="container">
-        
-        <div id="simulador" class="content active">
+        <div id="resumo" class="content active">
             <div class="card">
-                <span class="label-small">Projeção 12 Meses</span>
-                <div class="balance-value" id="total-final">R$ 0,00</div>
-                <div class="chart-container"><canvas id="meuGrafico"></canvas></div>
+                <span style="font-size: 0.8rem; color: #888;">SALDO ATUAL INVESTIDO</span>
+                <div class="balance-value" id="saldo-total">R$ 0,00</div>
             </div>
             <div class="card">
-                <h3>Configurar Investimento</h3>
-                <label class="label-small">Capital Inicial (R$)</label>
-                <input type="number" id="capital-input" value="1000">
-                <label class="label-small">Taxa Mensal (%)</label>
-                <input type="number" id="taxa-input" value="1.5">
-                <button class="btn" onclick="atualizarTudo()">Simular Agora</button>
+                <h3>Projeção de Crescimento</h3>
+                <canvas id="graficoReal" height="200"></canvas>
             </div>
         </div>
 
         <div id="extrato" class="content">
-            <button class="btn btn-pdf" onclick="exportarPDF()">📥 Baixar Relatório em PDF</button>
-            <div class="card" id="area-planilha" style="background: #1e1e1e;">
-                <h3 style="color: #00d1b2;">Relatório de Evolução</h3>
-                <p class="label-small">Projeção Detalhada de Juros Compostos</p>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Mês</th>
-                            <th>Capital</th>
-                            <th>Juros</th>
-                            <th>Total</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabela-corpo"></tbody>
-                </table>
+            <div class="card">
+                <h3>Movimentações de Conta</h3>
+                <div id="lista-logs">Conectando ao servidor...</div>
             </div>
         </div>
 
-        <div id="aportes" class="content">
-            <div class="card" style="text-align: center;">
-                <h3>Área de Depósito</h3>
-                <p class="label-small">Gere o código PIX e envie o comprovante para o nosso WhatsApp.</p>
-                <input type="number" id="valor-aporte" placeholder="Valor R$">
-                <button class="btn" onclick="document.getElementById('pix-box').style.display='block'">Gerar PIX</button>
-                <div id="pix-box" style="display:none; margin-top:20px; border: 1px dashed var(--primary); padding: 15px;">
-                    <p class="label-small">Chave PIX para transferência:</p>
-                    <code id="chave" style="display: block; background: #333; padding: 10px; margin: 10px 0; border-radius: 5px;">71404652400</code>
-                    <button class="btn" style="background:#fff" onclick="copiarPix()">Copiar Chave</button>
-                </div>
+        <div id="admin" class="content">
+            <div class="card">
+                <h3>Gerir Capital do Cliente</h3>
+                <label style="font-size: 0.7rem; color: #888;">VALOR DA OPERAÇÃO</label>
+                <input type="number" id="adm-valor" placeholder="Ex: 500.00">
+                <button class="btn" onclick="registrarOp('deposito')">Confirmar Aporte</button>
+                <button class="btn" style="background: var(--red)" onclick="registrarOp('saque')">Registrar Retirada</button>
+            </div>
+            <div class="card">
+                <p style="font-size: 0.8rem; color: #888;">Nota: Use o 'Saque' se o cliente retirar apenas o rendimento mensal.</p>
             </div>
         </div>
-
     </div>
 
     <script>
-        let meuGrafico;
+        const firebaseConfig = {
+            apiKey: "AIzaSyBrkcTuqt4jWLSVz3g96z--8iNe30sAiXg", 
+            authDomain: "meuinvestimentoreal-e4aa1.firebaseapp.com",
+            databaseURL: "https://meuinvestimentoreal-e4aa1-default-rtdb.firebaseio.com",
+            projectId: "meuinvestimentoreal-e4aa1"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function fazerLogin() {
+            const pass = document.getElementById('pass-input').value;
+            if(pass === "1234") {
+                document.getElementById('login-screen').style.display = 'none';
+            } else if(pass === "admin99") {
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('btn-tab-admin').style.display = 'block';
+            } else { alert("Senha incorreta"); return; }
+            ouvirDados();
+        }
+
+        function registrarOp(tipo) {
+            const valor = parseFloat(document.getElementById('adm-valor').value);
+            if(!valor) return;
+            db.ref('movimentacoes').push({
+                data: new Date().toLocaleDateString('pt-BR'),
+                tipo: tipo,
+                valor: valor,
+                timestamp: Date.now()
+            }).then(() => { 
+                document.getElementById('adm-valor').value = "";
+                alert("Operação registada!"); 
+            });
+        }
+
+        function ouvirDados() {
+            db.ref('movimentacoes').on('value', (snapshot) => {
+                const dados = snapshot.val();
+                let saldo = 0;
+                let html = "";
+                
+                if (dados) {
+                    const lista = Object.values(dados).sort((a,b) => b.timestamp - a.timestamp);
+                    lista.forEach(item => {
+                        if(item.tipo === 'deposito') saldo += item.valor;
+                        else saldo -= item.valor;
+
+                        html += `
+                            <div class="log-item">
+                                <span>${item.data}</span>
+                                <span style="color:${item.tipo === 'deposito' ? '#00d1b2':'#ff3860'}">${item.tipo.toUpperCase()}</span>
+                                <span>R$ ${item.valor.toLocaleString('pt-BR')}</span>
+                            </div>`;
+                    });
+                }
+                document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+                document.getElementById('lista-logs').innerHTML = html || "Sem movimentações.";
+            });
+        }
 
         function openTab(tabName, btn) {
             let content = document.getElementsByClassName("content");
@@ -120,52 +147,6 @@
             document.getElementById(tabName).classList.add("active");
             btn.classList.add("active");
         }
-
-        function atualizarTudo() {
-            const C = parseFloat(document.getElementById('capital-input').value) || 0;
-            const jurosPct = parseFloat(document.getElementById('taxa-input').value) / 100;
-            let dadosGrafico = []; let labels = []; let tabelaHTML = ""; let saldoAtual = C;
-
-            for (let m = 0; m <= 12; m++) {
-                let rendimentoMes = m === 0 ? 0 : saldoAtual * jurosPct;
-                saldoAtual += rendimentoMes;
-                dadosGrafico.push(saldoAtual.toFixed(2));
-                labels.push("Mês " + m);
-                tabelaHTML += `<tr><td>${m}</td><td>R$ ${C.toFixed(2)}</td><td>R$ ${rendimentoMes.toFixed(2)}</td><td>R$ ${saldoAtual.toFixed(2)}</td></tr>`;
-            }
-            document.getElementById('total-final').innerText = "R$ " + saldoAtual.toLocaleString('pt-BR');
-            document.getElementById('tabela-corpo').innerHTML = tabelaHTML;
-            renderizarGrafico(labels, dadosGrafico);
-        }
-
-        function renderizarGrafico(labels, dados) {
-            const ctx = document.getElementById('meuGrafico').getContext('2d');
-            if (meuGrafico) meuGrafico.destroy();
-            meuGrafico = new Chart(ctx, {
-                type: 'line',
-                data: { labels: labels, datasets: [{ data: dados, borderColor: '#00d1b2', backgroundColor: 'rgba(0, 209, 178, 0.1)', fill: true, tension: 0.3 }] },
-                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-            });
-        }
-
-        function exportarPDF() {
-            const elemento = document.getElementById('area-planilha');
-            const opt = { 
-                margin: 0.5, 
-                filename: 'relatorio-investimento.pdf', 
-                html2canvas: { scale: 2 }, 
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } 
-            };
-            html2pdf().set(opt).from(elemento).save();
-        }
-
-        function copiarPix() {
-            const chave = document.getElementById('chave').innerText;
-            navigator.clipboard.writeText(chave);
-            alert("Chave PIX copiada: " + chave + "\nApós o pagamento, envie o comprovante pelo WhatsApp.");
-        }
-
-        window.onload = atualizarTudo;
     </script>
 </body>
 </html>
