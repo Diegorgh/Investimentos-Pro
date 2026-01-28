@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest Pro - Gestão Total</title>
+    <title>Invest Pro - Cronograma Real</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -25,18 +25,18 @@
         table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; color: #fff; }
         th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #333; }
         td { padding: 10px; border-bottom: 1px solid #222; }
+        .mes-atual { background: rgba(0, 209, 178, 0.1); border-left: 4px solid var(--primary); }
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
         .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; }
         .client-item { background: #2d2d2d; padding: 10px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; border-left: 4px solid var(--primary); }
         .btn-whatsapp { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 18px; border-radius: 50px; text-decoration: none; font-weight: bold; z-index: 1000; font-size: 0.8rem; }
-        .admin-view-client { margin-top: 15px; padding: 15px; background: #252525; border-radius: 10px; display: none; border: 1px solid var(--gold); }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="card" style="width: 85%; max-width: 350px; text-align: center;">
-            <h2 style="color: var(--primary)">Invest Pro Admin</h2>
+            <h2 style="color: var(--primary)">Invest Pro</h2>
             <input type="text" id="user-id" placeholder="ID de Acesso">
             <input type="password" id="pass-input" placeholder="Senha">
             <button class="btn" onclick="fazerLogin()">Aceder</button>
@@ -45,7 +45,7 @@
 
     <div class="tab-menu" id="main-menu">
         <button class="tab-btn active" onclick="openTab('resumo', this)">RESUMO</button>
-        <button class="tab-btn" onclick="openTab('evolucao', this)">EVOLUÇÃO</button>
+        <button class="tab-btn" onclick="openTab('evolucao', this)">CRONOGRAMA</button>
         <button class="tab-btn" onclick="openTab('extrato', this)">EXTRATO</button>
         <button class="tab-btn" onclick="openTab('admin', this)" id="btn-tab-admin" style="display:none; color: var(--gold);">ADMIN 🛠️</button>
     </div>
@@ -64,49 +64,34 @@
 
         <div id="evolucao" class="content">
             <div class="card">
-                <h3>Minha Projeção</h3>
+                <h3>Evolução Mensal</h3>
+                <p class="label-small">Projeção por Calendário</p>
                 <table>
-                    <thead><tr><th>Mês</th><th>Capital</th><th>Juros</th><th>Total</th></tr></thead>
+                    <thead><tr><th>Mês</th><th>Rendimento</th><th>Saldo Final</th></tr></thead>
                     <tbody id="tabela-evolucao"></tbody>
                 </table>
             </div>
         </div>
 
         <div id="extrato" class="content">
-            <div class="card"><h3>Histórico</h3><div id="lista-logs">Sem dados.</div></div>
+            <div class="card"><h3>Histórico Real</h3><div id="lista-logs">Sem dados.</div></div>
         </div>
 
         <div id="admin" class="content">
             <div class="card">
-                <h3>Gestão de Clientes</h3>
-                <input type="text" id="adm-cliente-id" placeholder="ID do Cliente">
-                
-                <div id="view-admin-client" class="admin-view-client">
-                    <p class="label-small">Monitorização em Tempo Real:</p>
-                    <div id="adm-info-saldo" style="font-size: 1.5rem; color: var(--gold); font-weight: bold;">R$ 0,00</div>
-                    
-                    <label class="label-small">Taxa Personalizada (%)</label>
-                    <input type="number" id="adm-taxa-input" step="0.1">
-                    <button class="btn" style="background: var(--gold); color: black;" onclick="salvarTaxaAdmin()">Salvar Nova Taxa</button>
-
-                    <h4 style="margin-top:20px;">Extrato do Cliente:</h4>
-                    <div id="adm-info-extrato" style="font-size: 0.75rem; max-height: 150px; overflow-y: auto; background: #111; padding: 5px;"></div>
-                    
-                    <h4 style="margin-top:20px;">Evolução Estimada:</h4>
-                    <table style="font-size: 0.7rem;">
-                        <thead><tr><th>Mês</th><th>Juros</th><th>Total</th></tr></thead>
-                        <tbody id="adm-info-tabela"></tbody>
-                    </table>
+                <h3>Painel Administrativo</h3>
+                <input type="text" id="adm-cliente-id" placeholder="Cliente Selecionado">
+                <div id="view-admin-client" style="display:none; margin-bottom: 20px; padding: 10px; border: 1px solid var(--gold); border-radius: 8px;">
+                    <div id="adm-info-saldo" style="font-size: 1.2rem; font-weight: bold; color: var(--gold);">R$ 0,00</div>
+                    <input type="number" id="adm-taxa-input" step="0.1" placeholder="Taxa %">
+                    <button class="btn" style="background:var(--gold); color:black;" onclick="salvarTaxaAdmin()">Atualizar Taxa</button>
                 </div>
-
-                <hr style="border:0; border-top:1px solid #444; margin: 20px 0;">
                 <input type="number" id="adm-valor" placeholder="Valor Operação R$">
                 <button class="btn" onclick="registrarOp('deposito')">Depositar</button>
                 <button class="btn" style="background:var(--red); color:white;" onclick="registrarOp('saque')">Sacar</button>
             </div>
-
             <div class="card">
-                <h4>Lista de Clientes:</h4>
+                <h4>Clientes:</h4>
                 <div id="corpo-lista-clientes"></div>
             </div>
         </div>
@@ -122,6 +107,8 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
+
+        const nomesMeses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
 
         function fazerLogin() {
             const u = document.getElementById('user-id').value.trim().toLowerCase();
@@ -144,7 +131,7 @@
                 document.getElementById('taxa-atual-view').innerText = `Taxa: ${(taxa*100).toFixed(1)}% a.m`;
                 
                 db.ref('usuarios/'+id).on('value', sData => {
-                    let saldo = 0; let logs = ""; let tab = "";
+                    let saldo = 0; let logs = "";
                     if(sData.val()) {
                         Object.values(sData.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(i => {
                             saldo += (i.tipo==='deposito'?i.valor:-i.valor);
@@ -155,10 +142,27 @@
                     document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
                     document.getElementById('lista-logs').innerHTML = logs || "Sem dados";
                     
-                    let temp = saldo;
-                    for(let m=1;m<=12;m++) {
-                        let j = temp * taxa; temp += j;
-                        tab += `<tr><td>${m}º</td><td>R$ ${saldo.toFixed(2)}</td><td style="color:#00d1b2">+${j.toFixed(2)}</td><td>${temp.toFixed(2)}</td></tr>`;
+                    // GERAR CRONOGRAMA POR MESES REAIS
+                    let tab = "";
+                    let dataAtual = new Date();
+                    let mesInicial = dataAtual.getMonth();
+                    let anoInicial = dataAtual.getFullYear();
+                    let tempSaldo = saldo;
+
+                    for(let m=0; m<12; m++) {
+                        let indiceMes = (mesInicial + m) % 12;
+                        let ano = anoInicial + Math.floor((mesInicial + m) / 12);
+                        let juros = tempSaldo * taxa;
+                        let classeDestaque = (m === 0) ? "class='mes-atual'" : "";
+                        let labelMes = (m === 0) ? "ATUAL" : "";
+                        
+                        tempSaldo += juros;
+
+                        tab += `<tr ${classeDestaque}>
+                            <td>${nomesMeses[indiceMes]}/${ano} ${labelMes}</td>
+                            <td style="color:#00d1b2">+ R$ ${juros.toFixed(2)}</td>
+                            <td>R$ ${tempSaldo.toFixed(2)}</td>
+                        </tr>`;
                     }
                     document.getElementById('tabela-evolucao').innerHTML = tab;
                 });
@@ -168,27 +172,12 @@
         function selecionarClienteAdmin(id) {
             document.getElementById('adm-cliente-id').value = id;
             document.getElementById('view-admin-client').style.display = 'block';
-            
             db.ref('configs/'+id).once('value', s => {
                 let t = s.val() ? s.val().taxa : 0.015;
                 document.getElementById('adm-taxa-input').value = (t*100).toFixed(1);
-                
                 db.ref('usuarios/'+id).on('value', snap => {
-                    let sld = 0; let hLogs = ""; let hTab = "";
-                    if(snap.val()){
-                        Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(i => {
-                            sld += (i.tipo==='deposito'?i.valor:-i.valor);
-                            hLogs += `<div style="border-bottom:1px solid #222; padding:3px;">${i.data} | ${i.tipo.toUpperCase()} | R$ ${i.valor.toFixed(2)}</div>`;
-                        });
-                    }
-                    document.getElementById('adm-info-saldo').innerText = sld.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
-                    document.getElementById('adm-info-extrato').innerHTML = hLogs || "Vazio";
-                    let tmp = sld;
-                    for(let m=1;m<=6;m++){
-                        let jr = tmp * t; tmp += jr;
-                        hTab += `<tr><td>${m}ºm</td><td>R$ ${jr.toFixed(2)}</td><td>R$ ${tmp.toFixed(2)}</td></tr>`;
-                    }
-                    document.getElementById('adm-info-tabela').innerHTML = hTab;
+                    let sld = 0; if(snap.val()){ Object.values(snap.val()).forEach(i => sld += (i.tipo==='deposito'?i.valor:-i.valor)); }
+                    document.getElementById('adm-info-saldo').innerText = "Saldo: " + sld.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
                 });
             });
         }
@@ -196,7 +185,7 @@
         function salvarTaxaAdmin() {
             let id = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
             let tx = parseFloat(document.getElementById('adm-taxa-input').value) / 100;
-            if(id && tx) db.ref('configs/'+id).set({taxa: tx}).then(()=>alert("Taxa Atualizada!"));
+            if(id && !isNaN(tx)) db.ref('configs/'+id).set({taxa: tx}).then(()=>alert("Taxa Atualizada!"));
         }
 
         function registrarOp(tipo) {
