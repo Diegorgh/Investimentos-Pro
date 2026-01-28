@@ -3,62 +3,112 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Investidor Pro - Multi-Cliente</title>
+    <title>Invest Pro - Sistema de Gestão</title>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
     <style>
-        :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; }
+        :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; --red: #ff3860; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
-        #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .tab-menu { display: none; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.7rem; }
+        
+        /* Telas */
+        #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
+        .tab-menu { display: none; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; overflow-x: auto; }
+        .tab-btn { flex: 1; padding: 15px 10px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.65rem; white-space: nowrap; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-        .container { padding: 20px; max-width: 550px; margin: auto; }
+
+        .container { padding: 20px; max-width: 550px; margin: auto; padding-bottom: 100px; }
         .content { display: none; }
         .content.active { display: block; }
+
+        /* Elementos UI */
         .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
+        .balance-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
+        .label-small { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
+
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+        th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #333; }
+        td { padding: 10px; border-bottom: 1px solid #222; }
+
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
-        .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+        .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: 0.3s; }
+        .btn-red { background: var(--red); color: white; }
+        
+        .client-item { background: #2d2d2d; padding: 10px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; border-left: 4px solid var(--primary); }
+        .btn-whatsapp { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 18px; border-radius: 50px; text-decoration: none; font-weight: bold; z-index: 1000; box-shadow: 0 4px 12px rgba(0,0,0,0.5); font-size: 0.8rem; }
     </style>
 </head>
 <body>
 
     <div id="login-screen">
         <div class="card" style="width: 85%; max-width: 350px; text-align: center;">
-            <h2 style="color: var(--primary)">Acesso Individual</h2>
-            <input type="text" id="user-id" placeholder="Digite seu CPF ou Nome">
-            <input type="password" id="pass-input" placeholder="Senha">
-            <button class="btn" onclick="fazerLogin()">Entrar</button>
+            <h2 style="color: var(--primary)">Portal Invest Pro</h2>
+            <input type="text" id="user-id" placeholder="Seu Identificador (CPF/Nome)">
+            <input type="password" id="pass-input" placeholder="Sua Senha">
+            <button class="btn" onclick="fazerLogin()">Aceder ao Sistema</button>
         </div>
     </div>
 
     <div class="tab-menu" id="main-menu">
         <button class="tab-btn active" onclick="openTab('resumo', this)">RESUMO</button>
+        <button class="tab-btn" onclick="openTab('evolucao', this)">EVOLUÇÃO</button>
         <button class="tab-btn" onclick="openTab('extrato', this)">EXTRATO</button>
-        <button class="tab-btn" onclick="openTab('admin', this)" id="btn-tab-admin" style="display:none; color: yellow;">ADMIN 🛠️</button>
+        <button class="tab-btn" onclick="openTab('admin', this)" id="btn-tab-admin" style="display:none; color: #f1c40f;">ADMIN 🛠️</button>
     </div>
 
+    <a href="https://wa.me/5581989006674" class="btn-whatsapp" target="_blank">💬 WhatsApp</a>
+
     <div class="container">
+        
         <div id="resumo" class="content active">
             <div class="card">
-                <span id="nome-cliente" style="color: #888; font-size: 0.8rem;">Olá!</span>
-                <div style="font-size: 2rem; font-weight: bold; color: var(--primary);" id="saldo-total">R$ 0,00</div>
+                <span class="label-small" id="welcome-msg">Saldo Total</span>
+                <div class="balance-value" id="saldo-total">R$ 0,00</div>
+            </div>
+            <div class="card">
+                <h3>Aporte Rápido (PIX)</h3>
+                <p class="label-small">Copie a chave: 71404652400</p>
+                <button class="btn" onclick="copiarPix()">Copiar Chave PIX</button>
+            </div>
+        </div>
+
+        <div id="evolucao" class="content">
+            <button class="btn" style="background: #e74c3c; color:white;" onclick="exportarPDF()">📥 Baixar PDF</button>
+            <div class="card" id="area-pdf">
+                <h3>Projeção de Rendimento</h3>
+                <p class="label-small">Baseado no seu saldo real atual (1.5% a.m)</p>
+                <table>
+                    <thead>
+                        <tr><th>Mês</th><th>Capital</th><th>Juros</th><th>Total</th></tr>
+                    </thead>
+                    <tbody id="tabela-evolucao"></tbody>
+                </table>
             </div>
         </div>
 
         <div id="extrato" class="content">
-            <div class="card" id="lista-logs">Carregando dados...</div>
+            <div class="card">
+                <h3>Histórico de Transações</h3>
+                <div id="lista-logs">Sem movimentações.</div>
+            </div>
         </div>
 
         <div id="admin" class="content">
             <div class="card">
-                <h3>Gerir Cliente Específico</h3>
-                <input type="text" id="adm-cliente-id" placeholder="CPF/Nome do Cliente">
-                <input type="number" id="adm-valor" placeholder="Valor R$">
-                <button class="btn" onclick="registrarOp('deposito')">Adicionar Aporte</button>
-                <button class="btn" style="background: #ff3860; margin-top: 10px;" onclick="registrarOp('saque')">Registrar Retirada</button>
+                <h3>Gerir Clientes</h3>
+                <input type="text" id="adm-cliente-id" placeholder="ID do Cliente Selecionado">
+                <input type="number" id="adm-valor" placeholder="Valor da Operação (R$)">
+                <button class="btn" onclick="registrarOp('deposito')">Confirmar Aporte</button>
+                <button class="btn btn-red" onclick="registrarOp('saque')">Registrar Retirada</button>
+            </div>
+            <div id="lista-clientes-admin" class="card">
+                <h4>Clientes Registrados:</h4>
+                <div id="corpo-lista-clientes">Carregando lista...</div>
             </div>
         </div>
+
     </div>
 
     <script>
@@ -70,61 +120,87 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let usuarioLogado = "";
+        let currentUserId = "";
 
         function fazerLogin() {
             const user = document.getElementById('user-id').value.trim().toLowerCase();
             const pass = document.getElementById('pass-input').value;
 
             if(user === "admin" && pass === "admin99") {
-                usuarioLogado = "admin";
+                currentUserId = "admin";
                 document.getElementById('btn-tab-admin').style.display = 'block';
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-menu').style.display = 'flex';
+                ouvirListaClientes();
             } else if(user !== "" && pass === "1234") {
-                usuarioLogado = user;
+                currentUserId = user;
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-menu').style.display = 'flex';
-                document.getElementById('nome-cliente').innerText = "Cliente: " + user.toUpperCase();
-                ouvirDados(user);
-            } else {
-                alert("Dados incorretos!");
-            }
+                document.getElementById('welcome-msg').innerText = "Saldo Total (" + user.toUpperCase() + ")";
+                ouvirDadosCliente(user);
+            } else { alert("Acesso Inválido!"); }
         }
 
         function registrarOp(tipo) {
-            const clienteAlvo = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
-            const valor = parseFloat(document.getElementById('adm-valor').value);
-            if(!clienteAlvo || !valor) return alert("Preencha todos os campos!");
+            const target = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
+            const val = parseFloat(document.getElementById('adm-valor').value);
+            if(!target || !val) return alert("Preencha todos os campos!");
 
-            db.ref('usuarios/' + clienteAlvo).push({
+            db.ref('usuarios/' + target).push({
                 data: new Date().toLocaleDateString('pt-BR'),
                 tipo: tipo,
-                valor: valor,
+                valor: val,
                 timestamp: Date.now()
             }).then(() => {
-                alert("Lançado para " + clienteAlvo);
+                alert("Operação registada com sucesso!");
                 document.getElementById('adm-valor').value = "";
             });
         }
 
-        function ouvirDados(userId) {
-            db.ref('usuarios/' + userId).on('value', (snapshot) => {
+        function ouvirDadosCliente(id) {
+            db.ref('usuarios/' + id).on('value', (snapshot) => {
                 const dados = snapshot.val();
                 let saldo = 0;
-                let html = "";
+                let htmlLogs = "";
+                
                 if (dados) {
-                    Object.values(dados).sort((a,b) => b.timestamp - a.timestamp).forEach(item => {
+                    const logs = Object.values(dados).sort((a,b) => b.timestamp - a.timestamp);
+                    logs.forEach(item => {
                         saldo += (item.tipo === 'deposito' ? item.valor : -item.valor);
-                        html += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333;">
-                                    <span>${item.data}</span>
-                                    <span style="color:${item.tipo === 'deposito' ? '#00d1b2':'#ff3860'}">${item.tipo.toUpperCase()}</span>
-                                    <span>R$ ${item.valor.toFixed(2)}</span>
-                                 </div>`;
+                        htmlLogs += `<div class="log-item" style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333; font-size:0.8rem">
+                            <span>${item.data}</span>
+                            <span style="color:${item.tipo === 'deposito' ? '#00d1b2':'#ff3860'}">${item.tipo.toUpperCase()}</span>
+                            <span>R$ ${item.valor.toFixed(2)}</span>
+                        </div>`;
                     });
                 }
                 document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-                document.getElementById('lista-logs').innerHTML = html || "Sem movimentações.";
+                document.getElementById('lista-logs').innerHTML = htmlLogs || "Sem movimentações.";
+                gerarProjeção(saldo);
+            });
+        }
+
+        function gerarProjeção(saldoAtual) {
+            let html = "";
+            let tempSaldo = saldoAtual;
+            for(let i=1; i<=12; i++) {
+                let juros = tempSaldo * 0.015;
+                tempSaldo += juros;
+                html += `<tr><td>${i}º Mês</td><td>R$ ${saldoAtual.toFixed(2)}</td><td style="color:#00d1b2">+ R$ ${juros.toFixed(2)}</td><td>R$ ${tempSaldo.toFixed(2)}</td></tr>`;
+            }
+            document.getElementById('tabela-evolucao').innerHTML = html;
+        }
+
+        function ouvirListaClientes() {
+            db.ref('usuarios').on('value', (snapshot) => {
+                const users = snapshot.val();
+                let html = "";
+                if(users) {
+                    Object.keys(users).forEach(u => {
+                        html += `<div class="client-item" onclick="document.getElementById('adm-cliente-id').value='${u}'">👤 ${u.toUpperCase()}</div>`;
+                    });
+                }
+                document.getElementById('corpo-lista-clientes').innerHTML = html || "Nenhum cliente.";
             });
         }
 
@@ -136,6 +212,9 @@
             document.getElementById(tabName).classList.add("active");
             btn.classList.add("active");
         }
+
+        function copiarPix() { navigator.clipboard.writeText("71404652400"); alert("Chave PIX Copiada!"); }
+        function exportarPDF() { const e = document.getElementById('area-pdf'); html2pdf().from(e).save('meu-investimento.pdf'); }
     </script>
 </body>
 </html>
