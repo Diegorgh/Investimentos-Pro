@@ -5,13 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Investidor Pro - Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
         
-        /* Menu de Abas */
         .tab-menu { display: flex; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; }
-        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.75rem; transition: 0.3s; }
+        .tab-btn { flex: 1; padding: 15px 5px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.75rem; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
 
         .container { padding: 20px; max-width: 550px; margin: auto; }
@@ -22,15 +23,18 @@
         .balance-value { font-size: 1.8rem; font-weight: bold; color: var(--primary); }
         .label-small { font-size: 0.75rem; color: #888; text-transform: uppercase; }
 
-        /* Estilo da Tabela/Planilha */
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 0.85rem; color: #fff; }
         th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #333; }
         td { padding: 10px; border-bottom: 1px solid #222; }
-        tr:last-child { font-weight: bold; color: var(--primary); }
 
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
         .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 15px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        .btn-pdf { background: #e74c3c; color: white; margin-bottom: 15px; }
+        
         .chart-container { height: 200px; width: 100%; margin: 15px 0; }
+        
+        /* Estilo específico para o PDF (fundo branco no arquivo) */
+        .pdf-export { color: black !important; padding: 20px; }
     </style>
 </head>
 <body>
@@ -51,45 +55,38 @@
             </div>
             <div class="card">
                 <h3>Configurar Investimento</h3>
-                <label class="label-small">Capital Inicial (R$)</label>
                 <input type="number" id="capital-input" value="1000">
-                <label class="label-small">Juros Mensais (%)</label>
                 <input type="number" id="taxa-input" value="1.5">
                 <button class="btn" onclick="atualizarTudo()">Simular Agora</button>
             </div>
         </div>
 
         <div id="extrato" class="content">
-            <div class="card">
-                <h3>Planilha de Evolução</h3>
-                <p class="label-small">Acompanhamento mensal dos juros sobre o capital.</p>
-                <div style="overflow-x: auto;">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Mês</th>
-                                <th>Capital</th>
-                                <th>Juros</th>
-                                <th>Total</th>
-                            </tr>
-                        </thead>
-                        <tbody id="tabela-corpo">
-                            </tbody>
-                    </table>
-                </div>
+            <button class="btn btn-pdf" onclick="exportarPDF()">📥 Baixar Relatório em PDF</button>
+            <div class="card" id="area-planilha">
+                <h3>Relatório de Evolução</h3>
+                <p class="label-small">Simulação de Juros Compostos</p>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mês</th>
+                            <th>Capital</th>
+                            <th>Juros</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-corpo"></tbody>
+                </table>
             </div>
         </div>
 
         <div id="aportes" class="content">
             <div class="card" style="text-align: center;">
                 <h3>Área de Depósito</h3>
-                <p class="label-small">Envie seu aporte para acelerar o crescimento.</p>
                 <input type="number" id="valor-aporte" placeholder="Valor R$">
                 <button class="btn" onclick="document.getElementById('pix-box').style.display='block'">Gerar PIX</button>
-                
                 <div id="pix-box" style="display:none; margin-top:20px; border: 1px dashed var(--primary); padding: 15px;">
-                    <p class="label-small">Copie a chave abaixo:</p>
-                    <code id="chave" style="display:block; margin: 10px 0;">SUA-CHAVE-AQUI</code>
+                    <code id="chave">SUA-CHAVE-PIX-AQUI</code>
                     <button class="btn" style="background:#fff" onclick="copiarPix()">Copiar Código</button>
                 </div>
             </div>
@@ -112,33 +109,16 @@
         function atualizarTudo() {
             const C = parseFloat(document.getElementById('capital-input').value) || 0;
             const jurosPct = parseFloat(document.getElementById('taxa-input').value) / 100;
-            const meses = 12;
+            let dadosGrafico = []; let labels = []; let tabelaHTML = ""; let saldoAtual = C;
 
-            let dadosGrafico = [];
-            let labels = [];
-            let tabelaHTML = "";
-            let saldoAtual = C;
-
-            for (let m = 0; m <= meses; m++) {
+            for (let m = 0; m <= 12; m++) {
                 let rendimentoMes = m === 0 ? 0 : saldoAtual * jurosPct;
                 saldoAtual += rendimentoMes;
-
-                // Guardar dados para o gráfico
                 dadosGrafico.push(saldoAtual.toFixed(2));
                 labels.push("Mês " + m);
-
-                // Criar linha da tabela
-                tabelaHTML += `
-                    <tr>
-                        <td>${m}</td>
-                        <td>${C.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                        <td>${rendimentoMes.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                        <td>${saldoAtual.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'})}</td>
-                    </tr>
-                `;
+                tabelaHTML += `<tr><td>${m}</td><td>R$ ${C.toFixed(2)}</td><td>R$ ${rendimentoMes.toFixed(2)}</td><td>R$ ${saldoAtual.toFixed(2)}</td></tr>`;
             }
-
-            document.getElementById('total-final').innerText = saldoAtual.toLocaleString('pt-BR', {style: 'currency', currency: 'BRL'});
+            document.getElementById('total-final').innerText = "R$ " + saldoAtual.toLocaleString('pt-BR');
             document.getElementById('tabela-corpo').innerHTML = tabelaHTML;
             renderizarGrafico(labels, dadosGrafico);
         }
@@ -148,24 +128,26 @@
             if (meuGrafico) meuGrafico.destroy();
             meuGrafico = new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: 'Evolução',
-                        data: dados,
-                        borderColor: '#00d1b2',
-                        backgroundColor: 'rgba(0, 209, 178, 0.1)',
-                        fill: true,
-                        tension: 0.3
-                    }]
-                },
+                data: { labels: labels, datasets: [{ data: dados, borderColor: '#00d1b2', fill: true, tension: 0.3 }] },
                 options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
             });
         }
 
+        function exportarPDF() {
+            const elemento = document.getElementById('area-planilha');
+            const options = {
+                margin: 1,
+                filename: 'meu-investimento.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, backgroundColor: '#1e1e1e' },
+                jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+            };
+            html2pdf().set(options).from(elemento).save();
+        }
+
         function copiarPix() {
             navigator.clipboard.writeText(document.getElementById('chave').innerText);
-            alert("Copiado! Envie o comprovante para o suporte.");
+            alert("PIX Copiado!");
         }
 
         window.onload = atualizarTudo;
