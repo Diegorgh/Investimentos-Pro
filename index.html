@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Invest Pro - Gestão Personalizada</title>
+    <title>Invest Pro - Gestão Total</title>
     
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
@@ -12,32 +12,24 @@
     <style>
         :root { --primary: #00d1b2; --dark: #121212; --gray: #1e1e1e; --text: #ffffff; --red: #ff3860; --gold: #f1c40f; }
         body { font-family: 'Segoe UI', sans-serif; background-color: var(--dark); color: var(--text); margin: 0; }
-        
         #login-screen { position: fixed; inset: 0; background: var(--dark); z-index: 2000; display: flex; align-items: center; justify-content: center; }
         .tab-menu { display: none; background: var(--gray); position: sticky; top: 0; z-index: 100; border-bottom: 1px solid #333; overflow-x: auto; }
         .tab-btn { flex: 1; padding: 15px 10px; border: none; background: none; color: #888; font-weight: bold; cursor: pointer; font-size: 0.65rem; white-space: nowrap; }
         .tab-btn.active { color: var(--primary); border-bottom: 3px solid var(--primary); }
-
         .container { padding: 20px; max-width: 550px; margin: auto; padding-bottom: 100px; }
         .content { display: none; }
         .content.active { display: block; }
-
         .card { background: var(--gray); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 1px solid #333; }
         .balance-value { font-size: 2.2rem; font-weight: bold; color: var(--primary); margin: 10px 0; }
         .label-small { font-size: 0.75rem; color: #888; text-transform: uppercase; letter-spacing: 1px; }
-
-        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.8rem; margin-top: 10px; color: #fff; }
         th { text-align: left; color: var(--primary); padding: 10px; border-bottom: 1px solid #333; }
         td { padding: 10px; border-bottom: 1px solid #222; }
-
         input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: none; background: #333; color: white; box-sizing: border-box; }
-        .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; transition: 0.3s; }
-        .btn-red { background: var(--red); color: white; }
-        .btn-gold { background: var(--gold); color: black; }
-        
+        .btn { width: 100%; background: var(--primary); color: var(--dark); border: none; padding: 14px; border-radius: 10px; font-weight: bold; cursor: pointer; margin-top: 8px; }
         .client-item { background: #2d2d2d; padding: 10px; border-radius: 8px; margin-bottom: 5px; cursor: pointer; border-left: 4px solid var(--primary); }
         .btn-whatsapp { position: fixed; bottom: 20px; right: 20px; background-color: #25d366; color: white; padding: 12px 18px; border-radius: 50px; text-decoration: none; font-weight: bold; z-index: 1000; font-size: 0.8rem; }
-        .admin-view-client { margin-top: 15px; padding: 15px; background: #252525; border-radius: 10px; display: none; border: 1px solid #444; }
+        .admin-view-client { margin-top: 15px; padding: 15px; background: #252525; border-radius: 10px; display: none; border: 1px solid var(--gold); }
     </style>
 </head>
 <body>
@@ -45,7 +37,7 @@
     <div id="login-screen">
         <div class="card" style="width: 85%; max-width: 350px; text-align: center;">
             <h2 style="color: var(--primary)">Invest Pro Admin</h2>
-            <input type="text" id="user-id" placeholder="ID de Acesso (CPF/Nome)">
+            <input type="text" id="user-id" placeholder="ID de Acesso">
             <input type="password" id="pass-input" placeholder="Senha">
             <button class="btn" onclick="fazerLogin()">Aceder</button>
         </div>
@@ -66,20 +58,13 @@
             <div class="card">
                 <span class="label-small" id="welcome-msg">Saldo Total</span>
                 <div class="balance-value" id="saldo-total">R$ 0,00</div>
-                <div id="taxa-atual-view" style="font-size: 0.8rem; color: #888;">Taxa de Rendimento: 1.5% a.m</div>
-            </div>
-            <div class="card">
-                <h3>PIX de Investimento</h3>
-                <p class="label-small">Chave: 71404652400</p>
-                <button class="btn" onclick="copiarPix()">Copiar Chave PIX</button>
+                <div id="taxa-atual-view" style="font-size: 0.8rem; color: #888;">Taxa: 1.5% a.m</div>
             </div>
         </div>
 
         <div id="evolucao" class="content">
-            <button class="btn" style="background: #e74c3c; color:white;" onclick="exportarPDF()">📥 Baixar PDF</button>
-            <div class="card" id="area-pdf">
-                <h3>Projeção Customizada</h3>
-                <p class="label-small" id="desc-taxa-evolucao">Crescimento baseado na sua taxa pessoal.</p>
+            <div class="card">
+                <h3>Minha Projeção</h3>
                 <table>
                     <thead><tr><th>Mês</th><th>Capital</th><th>Juros</th><th>Total</th></tr></thead>
                     <tbody id="tabela-evolucao"></tbody>
@@ -88,35 +73,41 @@
         </div>
 
         <div id="extrato" class="content">
-            <div class="card"><h3>Histórico de Transações</h3><div id="lista-logs">Sem dados.</div></div>
+            <div class="card"><h3>Histórico</h3><div id="lista-logs">Sem dados.</div></div>
         </div>
 
         <div id="admin" class="content">
             <div class="card">
-                <h3>Painel de Gestão</h3>
-                <input type="text" id="adm-cliente-id" placeholder="ID do Cliente Selecionado">
+                <h3>Gestão de Clientes</h3>
+                <input type="text" id="adm-cliente-id" placeholder="ID do Cliente">
                 
                 <div id="view-admin-client" class="admin-view-client">
-                    <p class="label-small">Gerir Taxa e Dados:</p>
-                    <div id="admin-saldo-info" style="font-weight: bold; color: var(--primary); font-size: 1.1rem;">Saldo: R$ 0,00</div>
+                    <p class="label-small">Monitorização em Tempo Real:</p>
+                    <div id="adm-info-saldo" style="font-size: 1.5rem; color: var(--gold); font-weight: bold;">R$ 0,00</div>
                     
-                    <div style="margin-top: 10px;">
-                        <label class="label-small">Taxa de Juros deste Cliente (%)</label>
-                        <input type="number" id="adm-taxa-cliente" step="0.1" placeholder="Ex: 2.5">
-                        <button class="btn btn-gold" onclick="salvarTaxaCliente()">Atualizar Taxa</button>
-                    </div>
+                    <label class="label-small">Taxa Personalizada (%)</label>
+                    <input type="number" id="adm-taxa-input" step="0.1">
+                    <button class="btn" style="background: var(--gold); color: black;" onclick="salvarTaxaAdmin()">Salvar Nova Taxa</button>
+
+                    <h4 style="margin-top:20px;">Extrato do Cliente:</h4>
+                    <div id="adm-info-extrato" style="font-size: 0.75rem; max-height: 150px; overflow-y: auto; background: #111; padding: 5px;"></div>
+                    
+                    <h4 style="margin-top:20px;">Evolução Estimada:</h4>
+                    <table style="font-size: 0.7rem;">
+                        <thead><tr><th>Mês</th><th>Juros</th><th>Total</th></tr></thead>
+                        <tbody id="adm-info-tabela"></tbody>
+                    </table>
                 </div>
 
-                <hr style="border: 0; border-top: 1px solid #444; margin: 20px 0;">
-                
-                <label class="label-small">Novo Lançamento (R$)</label>
-                <input type="number" id="adm-valor" placeholder="Valor da Operação">
-                <button class="btn" onclick="registrarOp('deposito')">Confirmar Aporte</button>
-                <button class="btn btn-red" onclick="registrarOp('saque')">Registrar Retirada</button>
+                <hr style="border:0; border-top:1px solid #444; margin: 20px 0;">
+                <input type="number" id="adm-valor" placeholder="Valor Operação R$">
+                <button class="btn" onclick="registrarOp('deposito')">Depositar</button>
+                <button class="btn" style="background:var(--red); color:white;" onclick="registrarOp('saque')">Sacar</button>
             </div>
-            <div id="lista-clientes-admin" class="card">
-                <h4>Selecione o Cliente:</h4>
-                <div id="corpo-lista-clientes">Carregando...</div>
+
+            <div class="card">
+                <h4>Lista de Clientes:</h4>
+                <div id="corpo-lista-clientes"></div>
             </div>
         </div>
 
@@ -131,113 +122,101 @@
         };
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        let currentUserId = "";
-        let taxaClienteGlobal = 0.015; // Padrão 1.5%
 
         function fazerLogin() {
-            const user = document.getElementById('user-id').value.trim().toLowerCase();
-            const pass = document.getElementById('pass-input').value;
-            if(user === "admin" && pass === "admin99") {
+            const u = document.getElementById('user-id').value.trim().toLowerCase();
+            const p = document.getElementById('pass-input').value;
+            if(u === "admin" && p === "admin99") {
                 document.getElementById('btn-tab-admin').style.display = 'block';
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-menu').style.display = 'flex';
                 ouvirListaClientes();
-            } else if(user !== "" && pass === "1234") {
-                currentUserId = user;
+            } else if(u !== "" && p === "1234") {
                 document.getElementById('login-screen').style.display = 'none';
                 document.getElementById('main-menu').style.display = 'flex';
-                document.getElementById('welcome-msg').innerText = "Saldo de " + user.toUpperCase();
-                ouvirDadosCliente(user);
-            } else { alert("Acesso Inválido!"); }
-        }
-
-        function salvarTaxaCliente() {
-            const target = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
-            const novaTaxa = parseFloat(document.getElementById('adm-taxa-cliente').value);
-            if(!target || isNaN(novaTaxa)) return alert("Selecione um cliente e defina a taxa!");
-            db.ref('configs/' + target).set({ taxa: novaTaxa / 100 }).then(() => alert("Taxa atualizada!"));
-        }
-
-        function registrarOp(tipo) {
-            const target = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
-            const val = parseFloat(document.getElementById('adm-valor').value);
-            if(!target || !val) return alert("Preencha os campos!");
-            db.ref('usuarios/' + target).push({
-                data: new Date().toLocaleDateString('pt-BR'),
-                tipo: tipo, valor: val, timestamp: Date.now()
-            }).then(() => { alert("Lançado!"); document.getElementById('adm-valor').value = ""; });
+                ouvirDadosCliente(u);
+            } else { alert("Erro!"); }
         }
 
         function ouvirDadosCliente(id) {
-            // Primeiro busca a taxa do cliente
-            db.ref('configs/' + id).on('value', (snap) => {
-                const conf = snap.val();
-                taxaClienteGlobal = conf ? conf.taxa : 0.015;
-                document.getElementById('taxa-atual-view').innerText = `Taxa de Rendimento: ${(taxaClienteGlobal * 100).toFixed(1)}% a.m`;
-                document.getElementById('desc-taxa-evolucao').innerText = `Projeção baseada na sua taxa de ${(taxaClienteGlobal * 100).toFixed(1)}%`;
+            db.ref('configs/'+id).on('value', sConf => {
+                let taxa = sConf.val() ? sConf.val().taxa : 0.015;
+                document.getElementById('taxa-atual-view').innerText = `Taxa: ${(taxa*100).toFixed(1)}% a.m`;
                 
-                // Depois busca o saldo
-                db.ref('usuarios/' + id).on('value', (snapshot) => {
-                    const dados = snapshot.val();
-                    let saldo = 0; let htmlLogs = "";
-                    if (dados) {
-                        Object.values(dados).sort((a,b) => b.timestamp - a.timestamp).forEach(item => {
-                            saldo += (item.tipo === 'deposito' ? item.valor : -item.valor);
-                            htmlLogs += `<div style="display:flex; justify-content:space-between; padding:10px; border-bottom:1px solid #333; font-size:0.8rem">
-                                <span>${item.data}</span>
-                                <span style="color:${item.tipo === 'deposito' ? '#00d1b2':'#ff3860'}">${item.tipo.toUpperCase()}</span>
-                                <span>R$ ${item.valor.toFixed(2)}</span></div>`;
+                db.ref('usuarios/'+id).on('value', sData => {
+                    let saldo = 0; let logs = ""; let tab = "";
+                    if(sData.val()) {
+                        Object.values(sData.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(i => {
+                            saldo += (i.tipo==='deposito'?i.valor:-i.valor);
+                            logs += `<div style="display:flex; justify-content:space-between; padding:8px; border-bottom:1px solid #333; font-size:0.8rem">
+                                <span>${i.data}</span><span style="color:${i.tipo==='deposito'?'#00d1b2':'#ff3860'}">${i.tipo}</span><span>R$ ${i.valor.toFixed(2)}</span></div>`;
                         });
                     }
-                    document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-                    document.getElementById('lista-logs').innerHTML = htmlLogs || "Sem dados.";
-                    gerarProjeção(saldo, taxaClienteGlobal);
+                    document.getElementById('saldo-total').innerText = saldo.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+                    document.getElementById('lista-logs').innerHTML = logs || "Sem dados";
+                    
+                    let temp = saldo;
+                    for(let m=1;m<=12;m++) {
+                        let j = temp * taxa; temp += j;
+                        tab += `<tr><td>${m}º</td><td>R$ ${saldo.toFixed(2)}</td><td style="color:#00d1b2">+${j.toFixed(2)}</td><td>${temp.toFixed(2)}</td></tr>`;
+                    }
+                    document.getElementById('tabela-evolucao').innerHTML = tab;
                 });
             });
-        }
-
-        function gerarProjeção(saldo, taxa) {
-            let html = ""; let temp = saldo;
-            for(let i=1; i<=12; i++) {
-                let j = temp * taxa; temp += j;
-                html += `<tr><td>${i}º Mês</td><td>R$ ${saldo.toFixed(2)}</td><td style="color:#00d1b2">+ R$ ${j.toFixed(2)}</td><td>R$ ${temp.toFixed(2)}</td></tr>`;
-            }
-            document.getElementById('tabela-evolucao').innerHTML = html;
         }
 
         function selecionarClienteAdmin(id) {
             document.getElementById('adm-cliente-id').value = id;
             document.getElementById('view-admin-client').style.display = 'block';
-            db.ref('configs/' + id).once('value', s => {
-                const c = s.val();
-                document.getElementById('adm-taxa-cliente').value = c ? (c.taxa * 100).toFixed(1) : "1.5";
+            
+            db.ref('configs/'+id).once('value', s => {
+                let t = s.val() ? s.val().taxa : 0.015;
+                document.getElementById('adm-taxa-input').value = (t*100).toFixed(1);
+                
+                db.ref('usuarios/'+id).on('value', snap => {
+                    let sld = 0; let hLogs = ""; let hTab = "";
+                    if(snap.val()){
+                        Object.values(snap.val()).sort((a,b)=>b.timestamp-a.timestamp).forEach(i => {
+                            sld += (i.tipo==='deposito'?i.valor:-i.valor);
+                            hLogs += `<div style="border-bottom:1px solid #222; padding:3px;">${i.data} | ${i.tipo.toUpperCase()} | R$ ${i.valor.toFixed(2)}</div>`;
+                        });
+                    }
+                    document.getElementById('adm-info-saldo').innerText = sld.toLocaleString('pt-BR', {style:'currency',currency:'BRL'});
+                    document.getElementById('adm-info-extrato').innerHTML = hLogs || "Vazio";
+                    let tmp = sld;
+                    for(let m=1;m<=6;m++){
+                        let jr = tmp * t; tmp += jr;
+                        hTab += `<tr><td>${m}ºm</td><td>R$ ${jr.toFixed(2)}</td><td>R$ ${tmp.toFixed(2)}</td></tr>`;
+                    }
+                    document.getElementById('adm-info-tabela').innerHTML = hTab;
+                });
             });
-            db.ref('usuarios/' + id).once('value', s => {
-                let saldo = 0; const d = s.val();
-                if(d) Object.values(d).forEach(i => saldo += (i.tipo==='deposito'?i.valor:-i.valor));
-                document.getElementById('admin-saldo-info').innerText = "Saldo Real: " + saldo.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
-            });
+        }
+
+        function salvarTaxaAdmin() {
+            let id = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
+            let tx = parseFloat(document.getElementById('adm-taxa-input').value) / 100;
+            if(id && tx) db.ref('configs/'+id).set({taxa: tx}).then(()=>alert("Taxa Atualizada!"));
+        }
+
+        function registrarOp(tipo) {
+            let id = document.getElementById('adm-cliente-id').value.trim().toLowerCase();
+            let v = parseFloat(document.getElementById('adm-valor').value);
+            if(id && v) db.ref('usuarios/'+id).push({data: new Date().toLocaleDateString('pt-BR'), tipo: tipo, valor: v, timestamp: Date.now()}).then(()=>alert("Sucesso!"));
         }
 
         function ouvirListaClientes() {
-            db.ref('usuarios').on('value', (snapshot) => {
-                const users = snapshot.val();
-                let html = "";
-                if(users) Object.keys(users).forEach(u => html += `<div class="client-item" onclick="selecionarClienteAdmin('${u}')">👤 ${u.toUpperCase()}</div>`);
-                document.getElementById('corpo-lista-clientes').innerHTML = html || "Nenhum cliente.";
+            db.ref('usuarios').on('value', s => {
+                let h = ""; if(s.val()) Object.keys(s.val()).forEach(u => h += `<div class="client-item" onclick="selecionarClienteAdmin('${u}')">👤 ${u.toUpperCase()}</div>`);
+                document.getElementById('corpo-lista-clientes').innerHTML = h || "Nenhum cliente";
             });
         }
 
-        function openTab(tabName, btn) {
-            let content = document.getElementsByClassName("content");
-            for (let i = 0; i < content.length; i++) { content[i].classList.remove("active"); }
-            let tabBtns = document.getElementsByClassName("tab-btn");
-            for (let i = 0; i < tabBtns.length; i++) { tabBtns[i].classList.remove("active"); }
-            document.getElementById(tabName).classList.add("active");
-            btn.classList.add("active");
+        function openTab(t, b) {
+            let c = document.getElementsByClassName("content"); for(let i=0;i<c.length;i++) c[i].classList.remove("active");
+            let bt = document.getElementsByClassName("tab-btn"); for(let i=0;i<bt.length;i++) bt[i].classList.remove("active");
+            document.getElementById(t).classList.add("active"); b.classList.add("active");
         }
-        function copiarPix() { navigator.clipboard.writeText("71404652400"); alert("Chave PIX Copiada!"); }
-        function exportarPDF() { html2pdf().from(document.getElementById('area-pdf')).save('investimento.pdf'); }
     </script>
 </body>
 </html>
